@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { Shield, TrendingUp, Users, CheckCircle } from 'lucide-react'
 
 export default function Hero() {
@@ -55,9 +56,9 @@ export default function Hero() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="flex flex-wrap gap-4 pt-4"
             >
-              <button className="px-8 py-4 glass neon border-2 border-accent-neon shadow-neon bg-accent hover:bg-accent-dark text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-accent/40">
+              <Link href="/login" className="px-8 py-4 glass neon border-2 border-accent-neon shadow-neon bg-accent hover:bg-accent-dark text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-accent/40 inline-block text-center">
                 Get Started
-              </button>
+              </Link>
               <button className="px-8 py-4 glass neon border-2 border-accent-neon shadow-neon bg-accent hover:bg-accent-dark text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-accent/40">
                 Start a Relief Campaign
               </button>
