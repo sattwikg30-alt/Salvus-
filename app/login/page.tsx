@@ -272,7 +272,7 @@ export default function LoginPage() {
           <div className="mt-8 pt-6 border-t border-dark-lighter/30">
             <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mb-4">
               <Shield className="w-4 h-4 text-accent" />
-              <span>Secure & Encrypted</span>
+              <span>Secure Encrypted</span>
             </div>
             <div className="text-center text-sm text-gray-400">
               Don't have an account?{' '}
