@@ -1,11 +1,11 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, Shield, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
+import { GoogleOAuthProvider, googleLogout, useGoogleLogin } from '@react-oauth/google'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -16,6 +16,29 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    googleLogout()
+  }, [])
+
+  function GoogleButton({ onSuccess, onError }: { onSuccess: (tokenResponse: any) => void; onError: () => void }) {
+    const loginWithGoogle = useGoogleLogin({ onSuccess, onError })
+    return (
+      <button
+        type="button"
+        onClick={() => loginWithGoogle()}
+        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-neutral-900 text-white transition-all duration-200 border border-white/20 hover:border-accent/50 hover:bg-neutral-800 shadow-sm shadow-black/30 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.9 0-12.5-5.6-12.5-12.5S17.1 11 24 11c3.2 0 6.1 1.2 8.3 3.2l5.7-5.7C34.6 5 29.6 3 24 3 12.3 3 3 12.3 3 24s9.3 21 21 21c10.5 0 19.4-7.6 21-17.5.2-1.3.3-2.6.3-4z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.8 16.2 19.1 13 24 13c3.2 0 6.1 1.2 8.3 3.2l5.7-5.7C34.6 5 29.6 3 24 3 16.3 3 9.6 7.1 6.3 14.7z"/>
+          <path fill="#4CAF50" d="M24 45c5.4 0 10.4-2.1 14.1-5.6l-6.6-5.4c-2.2 1.5-4.9 2.4-7.6 2.4-5.3 0-9.8-3.4-11.4-8.1l-6.7 5.2C9.6 40.9 16.3 45 24 45z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.2-3.4 5.8-6.3 7.4l6.6 5.4C39.4 37.9 42.8 31.6 43.6 24c.2-1.3.3-2.6.3-4z"/>
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+    )
+  }
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setLoading(true)
@@ -138,18 +161,34 @@ export default function LoginPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="bg-dark/50 backdrop-blur-xl border border-white/5 rounded-2xl p-8 shadow-2xl"
         >
-          {/* Google Login Button */}
+          {/* Google Login Button (Custom) */}
           <div className="mb-6">
-             <div className="flex justify-center">
+            <div className="flex justify-center">
               <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  theme="filled_black"
-                  shape="pill"
-                  text="continue_with"
-                  auto_select={false}
-                  width="100%"
+                <GoogleButton
+                  onSuccess={async (tokenResponse: any) => {
+                    setLoading(true)
+                    setError('')
+                    try {
+                      const res = await fetch('/api/auth/google', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ access_token: tokenResponse.access_token }),
+                      })
+                      const data = await res.json()
+                      if (!res.ok) throw new Error(data.message || 'Google Auth Failed')
+                      if (data.needsPasswordSetup) {
+                        router.push('/set-password')
+                      } else {
+                        router.push('/donor-dashboard')
+                      }
+                    } catch (err: any) {
+                      setError(err.message)
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  onError={() => setError('Google Login Failed')}
                 />
               </GoogleOAuthProvider>
             </div>

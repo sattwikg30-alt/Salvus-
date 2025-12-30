@@ -9,30 +9,53 @@ const client = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
 
 export async function POST(req: Request) {
   try {
-    const { credential } = await req.json()
+    const { credential, access_token } = await req.json()
 
-    if (!credential) {
+    let email = ''
+    let name = ''
+    let googleId = ''
+    let picture = ''
+
+    if (credential) {
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      })
+
+      const payload = ticket.getPayload()
+
+      if (!payload) {
+        return NextResponse.json(
+          { message: 'Invalid Google token' },
+          { status: 400 }
+        )
+      }
+
+      email = payload.email || ''
+      name = payload.name || ''
+      googleId = payload.sub || ''
+      picture = payload.picture || ''
+    } else if (access_token) {
+      const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${access_token}` },
+      })
+      if (!userinfoRes.ok) {
+        return NextResponse.json(
+          { message: 'Failed to fetch Google user info' },
+          { status: 400 }
+        )
+      }
+      const userinfo = await userinfoRes.json()
+      email = userinfo.email || ''
+      name = userinfo.name || ''
+      googleId = userinfo.sub || ''
+      picture = userinfo.picture || ''
+    } else {
       return NextResponse.json(
-        { message: 'Google credential is required' },
+        { message: 'Google credential or access_token is required' },
         { status: 400 }
       )
     }
-
-    const ticket = await client.verifyIdToken({
-      idToken: credential,
-      audience: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-    })
-
-    const payload = ticket.getPayload()
-
-    if (!payload) {
-      return NextResponse.json(
-        { message: 'Invalid Google token' },
-        { status: 400 }
-      )
-    }
-
-    const { email, name, sub: googleId, picture } = payload
 
     if (!email) {
       return NextResponse.json(

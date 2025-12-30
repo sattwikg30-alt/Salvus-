@@ -1,12 +1,12 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, User, Shield, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
+import { GoogleOAuthProvider, googleLogout, useGoogleLogin } from '@react-oauth/google'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -20,6 +20,28 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    googleLogout()
+  }, [])
+
+  function GoogleButton({ onSuccess, onError }: { onSuccess: (tokenResponse: any) => void; onError: () => void }) {
+    const loginWithGoogle = useGoogleLogin({ onSuccess, onError })
+    return (
+      <button
+        type="button"
+        onClick={() => loginWithGoogle()}
+        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-neutral-900 text-white transition-all duration-200 border border-white/20 hover:border-accent/50 hover:bg-neutral-800 shadow-sm shadow-black/30 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+      >
+        <img
+          src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+          alt=""
+          className="w-5 h-5"
+        />
+        <span>Continue with Google</span>
+      </button>
+    )
+  }
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setLoading(true)
@@ -157,18 +179,34 @@ export default function SignupPage() {
         >
           {!success && (
             <>
-              {/* Google Signup Button */}
+              {/* Google Signup Button (Custom) */}
               <div className="mb-6">
                 <div className="flex justify-center">
                   <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleError}
-                      theme="filled_black"
-                      shape="pill"
-                      text="signup_with"
-                      auto_select={false}
-                      width="100%"
+                    <GoogleButton
+                      onSuccess={async (tokenResponse: any) => {
+                        setLoading(true)
+                        setError('')
+                        try {
+                          const res = await fetch('/api/auth/google', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ access_token: tokenResponse.access_token }),
+                          })
+                          const data = await res.json()
+                          if (!res.ok) throw new Error(data.message || 'Google Auth Failed')
+                          if (data.needsPasswordSetup) {
+                            router.push('/set-password')
+                          } else {
+                            router.push('/donor-dashboard')
+                          }
+                        } catch (err: any) {
+                          setError(err.message)
+                        } finally {
+                          setLoading(false)
+                        }
+                      }}
+                      onError={() => setError('Google Signup Failed')}
                     />
                   </GoogleOAuthProvider>
                 </div>
