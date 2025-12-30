@@ -148,6 +148,7 @@ export default function LoginPage() {
                   theme="filled_black"
                   shape="pill"
                   text="continue_with"
+                  auto_select={false}
                   width="100%"
                 />
               </GoogleOAuthProvider>

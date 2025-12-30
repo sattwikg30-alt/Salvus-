@@ -167,6 +167,7 @@ export default function SignupPage() {
                       theme="filled_black"
                       shape="pill"
                       text="signup_with"
+                      auto_select={false}
                       width="100%"
                     />
                   </GoogleOAuthProvider>
